@@ -6,7 +6,7 @@ updater = Updater(bot_token)
 dispatcher = updater.dispatcher
 
 def on_start(function):
-    handler = CommandHandler('start',start)
+    handler = CommandHandler('start',function)
     dispatcher.add_handler(handler)
 
 @on_start
