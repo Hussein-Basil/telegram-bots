@@ -1,7 +1,7 @@
 from telegram.ext import Updater,CommandHandler,MessageHandler,Filters
 from telegram.ext.dispatcher import run_async
 from telegram import KeyboardButton, ReplyKeyboardMarkup
-f
+
 bot_token = 'token'
 updater = Updater(bot_token)
 dispatcher = updater.dispatcher
