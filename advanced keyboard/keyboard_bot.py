@@ -1,23 +1,11 @@
 from telegram.ext import Updater,CommandHandler,MessageHandler,Filters
 from telegram.ext.dispatcher import run_async
 from telegram import KeyboardButton, ReplyKeyboardMarkup
+from handlers import Handlers
 
 bot_token = 'token'
 updater = Updater(bot_token)
 dispatcher = updater.dispatcher
-
-
-class Handlers:
-    def on_command(*args, **kwargs):
-        def command_handler(function):
-            handler = CommandHandler(kwargs['command'], function)
-            dispatcher.add_handler(handler)
-        return command_handler
-
-    def on_message(function):
-        handler = MessageHandler(Filters.text & ~Filters.command, function)        
-        dispatcher.add_handler(handler)
-
 
 class Keyboard:
     handlers_queue = []
