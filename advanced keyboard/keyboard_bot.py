@@ -1,107 +1,94 @@
-from telegram.ext import Updater,CommandHandler,MessageHandler,Filters
-from telegram.ext.dispatcher import run_async
 from telegram import KeyboardButton, ReplyKeyboardMarkup
-from handlers import Handlers
+from handlers import Handlers,updater,dispatcher
+from key import Key
 
-bot_token = 'token'
-updater = Updater(bot_token)
-dispatcher = updater.dispatcher
 
-class Keyboard:
-    handlers_queue = []
-    steps = ["Main Menu"]
+class Config:
     keyboards = {
-        'Main Menu' : [['First', 'Second'], ['Third'], ['Button Editor']],
-        'First' : [['1', '2'], ['3'], ['Back','Main Menu'], ['Button Editor']],
-        'Second' : [['Not Dead End'], ['Back','Main Menu'], ['Button Editor']],
-        'Not Dead End': [['Files'], ['Photos'], ['Voice Notes'], ['Back','Main Menu'], ['Button Editor']]
+        'Main Menu' : [['First', 'Second'], ['Third'],['Button Editor']],
+        'First' : [["Back","Main Menu"],['Button Editor']],
+        'Second' : [["Back","Main Menu"],['Button Editor']]
+
         }
-        
-    def markup(key_names):
+    steps = ["Main Menu"]
+    handlers_waiting = []
+    
+    def markup(keyboard):
         rows = []
-        for r in key_names:
-            cols = []
-            for c in r:
-                cols.append(KeyboardButton(c))
+        for row in keyboard:
+            cols = [KeyboardButton(col) for col in row]
             rows.append(cols)
         return ReplyKeyboardMarkup(rows)
-
 
 class Bot:
     
     def reply(update,context):
         text = update.effective_message.text
         chat_id = update.effective_chat.id
-        keyboards = Keyboard.keyboards
-        markup = Keyboard.markup
-
+        keyboards = Config.keyboards
+        
         if text == "Main Menu":
-            Keyboard.steps = []
+            Config.steps = []
 
         if text == "Back":
-            Keyboard.steps.pop(-1) # remove current keyboard from steps
-            last_keyboard = keyboards[Keyboard.steps[-1]]
-            context.bot.send_message(chat_id, text, reply_markup=markup(last_keyboard))
+            Config.steps.pop(-1)
+            last_keyboard = keyboards[Config.steps[-1]]
+            context.bot.send_message(chat_id, text, reply_markup=Config.markup(last_keyboard))
 
         if text == "Button Editor":
             for key in keyboards:
                 keyboards[key] = [['Add Button','Exit Editor'] if x==['Button Editor'] else x for x in keyboards[key]]
-            context.bot.send_message(chat_id, text, reply_markup=markup(keyboards[Keyboard.steps[-1]]))
+            context.bot.send_message(chat_id, text, reply_markup=Config.markup(keyboards[Config.steps[-1]]))
         
         if text == "Exit Editor":
             for key in keyboards:
                 keyboards[key] = [['Button Editor'] if x==['Add Button','Exit Editor'] else x for x in keyboards[key]]
-            context.bot.send_message(chat_id, text, reply_markup=markup(keyboards[Keyboard.steps[-1]]))
+            context.bot.send_message(chat_id, text, reply_markup=Config.markup(keyboards[Config.steps[-1]]))
                 
         
         if text == "Add Button":
             reply_handler = dispatcher.handlers[0][-1]
             dispatcher.remove_handler(reply_handler)
-            Keyboard.handlers_queue.append(reply_handler)
+            Config.handlers_waiting.append(reply_handler)
 
             context.bot.send_message(chat_id, 'Enter Button Name')
             Handlers.on_message(Bot.add_button)
-            print(dispatcher.handlers[0])
 
         if text in keyboards:
             keyboard = keyboards[text]
-            context.bot.send_message(chat_id, text, reply_markup=markup(keyboard))
-            Keyboard.steps.append(text)
-
-        print(Keyboard.steps)
+            context.bot.send_message(chat_id, text, reply_markup=Config.markup(keyboard))
+            Config.steps.append(text)
     
     
     def add_button(update,context):
+
+        name = update.effective_message.text
         chat_id = update.effective_chat.id
-        keyboards = Keyboard.keyboards
-        markup = Keyboard.markup
+        keyboards = Config.keyboards
 
-        if update.effective_message.text == "Exit Editor":
-            for key in keyboards:
-                keyboards[key] = [['Button Editor'] if x==['Add Button','Exit Editor'] else x for x in keyboards[key]]
-            context.bot.send_message(chat_id, text, reply_markup=markup(keyboards[Keyboard.steps[-1]]))
+        if name == "Exit Editor":
+            for key in Config.keyboards:
+                Config.keyboards[key] = [['Button Editor'] if x==['Add Button','Exit Editor'] else x for x in Config.keyboards[key]]
+            reply_markup = Config.markup(Config.keyboards[Config.steps[-1]])
+            context.bot.send_message(chat_id, name, reply_markup=reply_markup)
 
-        button_name = update.effective_message.text
-        if button_name in keyboards:
-            context.bot.send_message(chat_id, 'Name is already taken')
+        elif name in keyboards:
+            context.bot.send_message(chat_id, 'Name is already taken. Try Again')
+
         else :
-            keyboards[Keyboard.steps[-1]].insert(0,[button_name])
-            current = keyboards[Keyboard.steps[-1]]
-            context.bot.send_message(chat_id, 'Adding Button is Done', reply_markup=markup(current))
-
-            dispatcher.remove_handler(dispatcher.handlers[0][-1]) # removeing button name handler
-            dispatcher.add_handler(Keyboard.handlers_queue[-1]) # adding reply handler
+            button = Key(name, Config.steps[-1], Config.keyboards)
+            Config.keyboards[button]=[['Button Editor']]
+            reply_markup = Config.markup(Config.keyboards[Config.steps[-1]])
+            context.bot.send_message(chat_id, 'Adding Button is Done', reply_markup=reply_markup)
+            dispatcher.remove_handler(dispatcher.handlers[0][-1])
+            dispatcher.add_handler(Config.handlers_waiting.pop())
         
-
-
 
 @Handlers.on_command(command='start')
 def start(update,context):
-    print(dispatcher.handlers[0])
-    main_menu = Keyboard.markup(Keyboard.keyboards['Main Menu'])
+    main_menu = Config.markup(Config.keyboards['Main Menu'])
     update.effective_message.reply_text('Welcome', reply_markup=main_menu)
     Handlers.on_message(Bot.reply)
-    print(dispatcher.handlers[0])
 
 
 updater.start_polling()

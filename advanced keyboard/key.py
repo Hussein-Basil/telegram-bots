@@ -77,16 +77,3 @@ class Key:
 
     def add_column(self):
         self.parent_keyboard[self.row_index].insert(self.col_index, self.name)
-
-
-
-print(keyboards['Main Menu'])
-
-name = input('Enter Target Button : ')
-k = Key(name,'Main Menu',keyboards)
-
-while True:
-    x = input("Enter Direction : ")
-    if x=='up' or x=='down' or x=='left' or x=='right':
-        k.move(x)
-        print(keyboards['Main Menu'])
