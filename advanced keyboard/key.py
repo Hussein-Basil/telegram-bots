@@ -1,16 +1,11 @@
-keyboards = {"Main Menu": [['Files'], ['Photos'], ['Voice Notes'], ['Back','Main Menu'], ['Button Editor']]}
-
 class Key:
     def __init__(self,name,parent_key,keyboards):
         self.name = name
         self.parent_keyboard = keyboards[parent_key]
         self.row_index, self.col_index = self.find(self.name,self.parent_keyboard)
-        self.is_found = (True if self.row_index else False)
-        if not self.is_found:
-            self.row_index,self.col_index = 0,0
-            self.add_row()
-
-
+        if self.row_index == None:
+            self.parent_keyboard.insert(0,[self.name])
+        
     def find(self,target,keyboard):
         for row in self.parent_keyboard:
             if target in row:
@@ -21,29 +16,35 @@ class Key:
 
     def move(self, direction):
         if direction == 'up':
-            self.col_index = 0
-            self.remove()
+            if self.row_index==0 and len(self.parent_keyboard[self.row_index])==1:
+                self.parent_keyboard.append(self.parent_keyboard.pop(0))
+                self.row_index = len(self.parent_keyboard) - 1
+                self.col_index = 0
 
-            if self.row_index==0:
-                self.row_index = (0 if len(self.parent_keyboard[0])>1 else len(self.parent_keyboard))
-                self.add_row()
-                
-            else:
+            elif len(self.parent_keyboard[self.row_index])>1:
+                self.parent_keyboard.insert(self.row_index,[self.parent_keyboard[self.row_index].pop(self.col_index)])
                 self.row_index -= 1
-                self.add_column()
+                self.col_index = 0
+            
+            elif len(self.parent_keyboard[self.row_index])==1:
+                self.parent_keyboard[self.row_index-1].insert(0,self.parent_keyboard.pop(self.row_index)[0])
+                self.row_index -= 1
+                self.col_index = 0
                 
         elif direction == 'down':
-            self.col_index = 0
-            self.remove()
 
-            if self.row_index == len(self.parent_keyboard)-1:
-                self.row_index = (0 if len(self.parent_keyboard[self.row_index])==1 else len(self.parent_keyboard))
-                self.add_row()
-
-            else:
-                self.row_index +=1
-                self.add_column()
-
+            if self.row_index==len(self.parent_keyboard)-1 and len(self.parent_keyboard[self.row_index])==1:
+                self.parent_keyboard.insert(0,self.parent_keyboard.pop())
+                self.row_index,self.col_index = 0,0
+            
+            elif len(self.parent_keyboard[self.row_index])==1:
+                self.parent_keyboard[self.row_index+1].insert(0,self.parent_keyboard.pop(self.row_index)[0])
+                self.row_index,self.col_index = self.row_index,0
+            
+            elif len(self.parent_keyboard[self.row_index])>1:
+                self.parent_keyboard.insert(self.row_index+1,[self.parent_keyboard[self.row_index].pop(self.col_index)])
+                self.row_index += 1
+                self.col_index = 0
         
         elif direction == 'left':
             self.remove_column()
@@ -67,7 +68,6 @@ class Key:
 
     def remove(self):
         self.parent_keyboard[self.row_index].pop(self.col_index)
-        if [] in self.parent_keyboard: self.parent_keyboard.remove([])
 
     def remove_column(self):
         self.parent_keyboard[self.row_index].pop(self.col_index)

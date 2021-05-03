@@ -1,0 +1,7 @@
+{
+    "discord.detailsDebugging": "Debugging {git_repo_name}",
+    "files.associations": {
+        "iostream": "cpp",
+        "limits": "cpp"
+    }
+}
